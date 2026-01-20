@@ -1,67 +1,136 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <title>Peta Jawa Timur</title>
+  <meta charset="UTF-8">
+  <title>Pemetaan Cabang Alkes Jawa Timur</title>
 
-    <!-- Leaflet CSS -->
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-    <style>
-        #map {
-            width: 100%;
-            height: 100vh;
-        }
-    </style>
+  <!-- SheetJS -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    .controls {
+      padding: 12px;
+      background: #f5f5f5;
+    }
+
+    #map {
+      width: 100%;
+      height: 90vh;
+    }
+
+    .file-info {
+      font-size: 12px;
+      color: #333;
+      margin-top: 4px;
+    }
+  </style>
 </head>
 <body>
 
+<div class="controls">
+  <strong>Pemetaan Cabang Alkes Provinsi Jawa Timur</strong><br><br>
+
+  <input type="file" id="upload" accept=".xlsx,.xls">
+  <div id="fileInfo" class="file-info">Belum ada file diunggah</div>
+</div>
+
 <div id="map"></div>
 
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<!-- PapaParse (baca CSV dari Excel) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
 <script>
-    // Koordinat tengah Jawa Timur
-    const jatimCenter = [-7.5361, 112.2384];
+  // ===============================
+  // PETA TERKUNCI JAWA TIMUR
+  // ===============================
+  const jatimBounds = [
+    [-9.2, 111.5],
+    [-5.5, 114.8]
+  ];
 
-    // Inisialisasi peta (TANPA ZOOM)
-    const map = L.map('map', {
-        center: jatimCenter,
-        zoom: 8,
-        zoomControl: false,
-        dragging: false,
-        scrollWheelZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false,
-        keyboard: false
-    });
+  const map = L.map('map', {
+    center: [-7.5, 112.5],
+    zoom: 8,
+    minZoom: 8,
+    maxZoom: 8,
+    maxBounds: jatimBounds,
+    maxBoundsViscosity: 1.0,
+    zoomControl: false,
+    scrollWheelZoom: false,
+    dragging: false,
+    doubleClickZoom: false,
+    boxZoom: false,
+    keyboard: false
+  });
 
-    // Tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-    }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
 
-    // Load data dari CSV (Excel)
-    Papa.parse("data.csv", {
-        download: true,
-        header: true,
-        complete: function(results) {
-            results.data.forEach(row => {
-                if (row.latitude && row.longitude) {
-                    L.marker([row.latitude, row.longitude])
-                        .addTo(map)
-                        .bindPopup(`<b>${row.nama_kab}</b>`);
-                }
-            });
+  let markersLayer = L.layerGroup().addTo(map);
+
+  // ===============================
+  // UPLOAD EXCEL (PASTI KEDETEKSI)
+  // ===============================
+  const uploadInput = document.getElementById('upload');
+  const fileInfo = document.getElementById('fileInfo');
+
+  uploadInput.addEventListener('change', function () {
+    const file = uploadInput.files[0];
+
+    if (!file) {
+      fileInfo.textContent = "Tidak ada file dipilih";
+      return;
+    }
+
+    fileInfo.textContent = "File dipilih: " + file.name;
+
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet);
+
+      markersLayer.clearLayers();
+
+      let totalMarker = 0;
+
+      rows.forEach(row => {
+        const lat = parseFloat(row.Latitude);
+        const lng = parseFloat(row.Longitude);
+        const persen = row.Persentase;
+        const nama = row["Kabupaten/Kota"];
+
+        if (!isNaN(lat) && !isNaN(lng)) {
+          totalMarker++;
+
+          const marker = L.circleMarker([lat, lng], {
+            radius: 8,
+            color: 'red',
+            fillColor: 'red',
+            fillOpacity: 0.7
+          }).addTo(markersLayer);
+
+          marker.bindPopup(
+            `<b>${nama}</b><br>Persentase: ${persen}%`
+          );
         }
-    });
+      });
+
+      alert("Upload berhasil! Marker ditampilkan: " + totalMarker);
+    };
+
+    reader.readAsArrayBuffer(file);
+  });
 </script>
 
 </body>
