@@ -1,5 +1,3 @@
-# Pemetaan-Cabang-Alkess
-Web GIS pemetaan cabang alkes berbasis browser dengan update data dari Excel.
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -13,9 +11,6 @@ Web GIS pemetaan cabang alkes berbasis browser dengan update data dari Excel.
     />
 
     <style>
-        body {
-            margin: 0;
-        }
         #map {
             width: 100%;
             height: 100vh;
@@ -29,30 +24,23 @@ Web GIS pemetaan cabang alkes berbasis browser dengan update data dari Excel.
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<!-- PapaParse -->
+<!-- PapaParse (baca CSV dari Excel) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
 <script>
-    /* ===============================
-       BATAS WILAYAH JAWA TIMUR
-       =============================== */
-    const jatimBounds = [
-        [-8.9, 111.0], // Barat Daya
-        [-6.8, 114.5]  // Timur Laut
-    ];
+    // Koordinat tengah Jawa Timur
+    const jatimCenter = [-7.5361, 112.2384];
 
-    // Inisialisasi peta (FULL LOCK)
+    // Inisialisasi peta (TANPA ZOOM)
     const map = L.map('map', {
-        center: [-7.6, 112.5],
+        center: jatimCenter,
         zoom: 8,
         zoomControl: false,
         dragging: false,
         scrollWheelZoom: false,
         doubleClickZoom: false,
         boxZoom: false,
-        keyboard: false,
-        maxBounds: jatimBounds,
-        maxBoundsViscosity: 1.0
+        keyboard: false
     });
 
     // Tile layer
@@ -60,12 +48,7 @@ Web GIS pemetaan cabang alkes berbasis browser dengan update data dari Excel.
         attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // Paksa tampilan hanya Jawa Timur
-    map.fitBounds(jatimBounds);
-
-    /* ===============================
-       LOAD DATA DARI EXCEL (CSV)
-       =============================== */
+    // Load data dari CSV (Excel)
     Papa.parse("data.csv", {
         download: true,
         header: true,
